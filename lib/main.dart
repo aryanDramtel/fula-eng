@@ -1,8 +1,6 @@
-// ignore: unused_import
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:csv/csv.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void main() {
@@ -15,7 +13,7 @@ class TranslatorApp extends StatefulWidget {
 }
 
 class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserver {
-  Map<String, String> dictionary = {}; // Single dictionary for both directions
+  Map<String, String> dictionary = {}; 
   TextEditingController _controller = TextEditingController();
   String translation = "";
   double keyboardHeight = 0.0;
@@ -23,7 +21,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
   @override
   void initState() {
     super.initState();
-    loadCSV();
+    loadJSON(); // Load JSON instead of CSV
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -41,114 +39,88 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
     });
   }
 
-  Future<void> loadCSV() async {
-  final rawData = await rootBundle.loadString('assets/dictionary.csv');
-  List<List<dynamic>> csvData = const CsvToListConverter(
-    eol: "\n", 
-    fieldDelimiter: ",", 
-    textDelimiter: '"',  
-  ).convert(rawData);
+  Future<void> loadJSON() async {
+    final rawData = await rootBundle.loadString('assets/dictionary.json');
+    List<dynamic> jsonData = json.decode(rawData);
 
-  Map<String, String> tempDict = {};
+    Map<String, String> tempDict = {};
+    for (var entry in jsonData) {
+      String englishWord = entry['English'].toLowerCase();
+      String pulaarWord = entry['Pulaar'].toLowerCase();
 
-  for (var row in csvData) {
-    if (row.length < 2) continue; // Skip invalid rows
-
-    // The last column is the Pulaar word
-    String pulaarWord = row.last.toString().toLowerCase().trim();
-
-    // Map each English synonym to the Pulaar word
-    for (int i = 0; i < row.length - 1; i++) {
-      String englishWord = row[i].toString().toLowerCase().trim();
+      // Add both English -> Pulaar and Pulaar -> English lookups
       tempDict[englishWord] = pulaarWord;
-      tempDict[pulaarWord] = englishWord; // Allows reverse lookup
+      tempDict[pulaarWord] = englishWord;
     }
+
+    setState(() {
+      dictionary = tempDict;
+    });
+
+    print("✅ Successfully loaded ${dictionary.length} words.");
   }
 
-  setState(() {
-    dictionary = tempDict;
-  });
-}
-
-
   void translate() {
-    String input = _controller.text.toLowerCase();
-    if (dictionary.containsKey(input)) {
-      // If the word is in the dictionary, determine if it's English or Pulaar
-      setState(() {
-        // Check if the input word is in English or Pulaar
-        if (dictionary[input] != null) {
-          if (input == dictionary[input]?.toLowerCase()) {
-            // English -> Pulaar
-            translation = 'Translation in Pulaar: \n"${dictionary[input]}"';
-          } else {
-            // Pulaar -> English
-            translation = 'Translation in English: \n"${dictionary[input]}"';
-          }
-        } else {
-          translation = "Not found";
-        }
-      });
-    } else {
-      setState(() {
-        translation = "Not found";
-      });
-    }
+    String input = _controller.text.toLowerCase().trim();
+    setState(() {
+      translation = dictionary.containsKey(input)
+          ? 'Translation: \n"${dictionary[input]}"'
+          : "Not found";
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-  debugShowCheckedModeBanner: false,
-  home: Scaffold(
-    appBar: AppBar(title: Text('English - Fula Translator')),
-    body: Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _controller,
-                  decoration: InputDecoration(
-                    labelText: "Enter a word",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBar(title: Text('English - Fula Translator')),
+        body: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        labelText: "Enter a word",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      ),
+                      onSubmitted: (_) => translate(),
                     ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  ),
-                  onSubmitted: (_) => translate(),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: translate,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: translate,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      ),
+                      child: Text("Translate"),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  ),
-                  child: Text("Translate"),
+                    SizedBox(height: 20),
+                    Center(
+                      child: Text(
+                        translation,
+                        style: TextStyle(fontSize: 20),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    translation,
-                    style: TextStyle(fontSize: 20),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            buildFooter(),
+          ],
         ),
-        buildFooter(), // Placing the footer at the bottom naturally
-      ],
-    ),
-  ),
-);
-
+      ),
+    );
   }
 
   Widget buildFooter() {
