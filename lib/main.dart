@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
+import 'dictionary_screen.dart';
 
 void main() {
   runApp(TranslatorApp());
@@ -13,7 +14,7 @@ class TranslatorApp extends StatefulWidget {
 }
 
 class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserver {
-  Map<String, String> dictionary = {}; 
+  Map<String, String> dictionary = {};
   TextEditingController _controller = TextEditingController();
   String translation = "";
   double keyboardHeight = 0.0;
@@ -21,7 +22,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
   @override
   void initState() {
     super.initState();
-    loadJSON(); // Load JSON instead of CSV
+    loadJSON();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -33,7 +34,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
 
   @override
   void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final bottomInset = WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
     setState(() {
       keyboardHeight = bottomInset;
     });
@@ -47,8 +48,6 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
     for (var entry in jsonData) {
       String englishWord = entry['English'].toLowerCase();
       String pulaarWord = entry['Pulaar'].toLowerCase();
-
-      // Add both English -> Pulaar and Pulaar -> English lookups
       tempDict[englishWord] = pulaarWord;
       tempDict[pulaarWord] = englishWord;
     }
@@ -56,8 +55,6 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
     setState(() {
       dictionary = tempDict;
     });
-
-    print("✅ Successfully loaded ${dictionary.length} words.");
   }
 
   void translate() {
@@ -89,19 +86,12 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                       ),
                       onSubmitted: (_) => translate(),
                     ),
                     SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: translate,
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                      ),
                       child: Text("Translate"),
                     ),
                     SizedBox(height: 20),
@@ -111,6 +101,21 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                         style: TextStyle(fontSize: 20),
                         textAlign: TextAlign.center,
                       ),
+                    ),
+                    SizedBox(height: 20),
+                    Builder(
+                      builder: (context) {
+                        return ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => DictionaryScreen(dictionary: dictionary),
+                              ),
+                            );
+                          },
+                          child: Text("View Dictionary"),
+                        );
+                      },
                     ),
                   ],
                 ),
