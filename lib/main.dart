@@ -41,15 +41,27 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
   }
 
   Future<void> loadJSON() async {
-    final rawData = await rootBundle.loadString('assets/dictionary.json');
-    List<dynamic> jsonData = json.decode(rawData);
+    // Get all JSON files from the 'dict' folder
+    final manifestJson = await rootBundle.loadString('AssetManifest.json');
+    final manifest = json.decode(manifestJson) as Map<String, dynamic>;
+    final jsonFiles = manifest.keys
+        .where((key) => key.startsWith('assets/dict/') && key.endsWith('.json'))
+        .toList();
 
     Map<String, String> tempDict = {};
-    for (var entry in jsonData) {
-      String englishWord = entry['English'].toLowerCase();
-      String pulaarWord = entry['Pulaar'].toLowerCase();
-      tempDict[englishWord] = pulaarWord;
-      tempDict[pulaarWord] = englishWord;
+
+    // Loop through each JSON file
+    for (var file in jsonFiles) {
+      final rawData = await rootBundle.loadString(file);
+      List<dynamic> jsonData = json.decode(rawData);
+
+      // Add dictionary entries from the JSON file to the tempDict
+      for (var entry in jsonData) {
+        String englishWord = entry['English'].toLowerCase();
+        String pulaarWord = entry['Pulaar'].toLowerCase();
+        tempDict[englishWord] = pulaarWord;
+        tempDict[pulaarWord] = englishWord;
+      }
     }
 
     setState(() {
