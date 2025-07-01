@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dictionary_screen.dart';
 
 void main() {
@@ -14,14 +16,22 @@ class TranslatorApp extends StatefulWidget {
 }
 
 class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserver {
-  Map<String, String> dictionary = {};
+  List<Map<String, dynamic>> dictionary = [];
   TextEditingController _controller = TextEditingController();
   String translation = "";
+  String fromLang = "English";
+  String toLang = "Fula_FoutaDjallon";
   double keyboardHeight = 0.0;
+  late FlutterTts flutterTts;
+  late stt.SpeechToText speech;
+
+  List<String> languages = ["English", "French", "Fula_FoutaDjallon", "Fula_FoutaToro"];
 
   @override
   void initState() {
     super.initState();
+    flutterTts = FlutterTts();
+    speech = stt.SpeechToText();
     loadJSON();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -41,41 +51,43 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
   }
 
   Future<void> loadJSON() async {
-    // Get all JSON files from the 'dict' folder
-    final manifestJson = await rootBundle.loadString('AssetManifest.json');
-    final manifest = json.decode(manifestJson) as Map<String, dynamic>;
-    final jsonFiles = manifest.keys
-        .where((key) => key.startsWith('assets/dict/') && key.endsWith('.json'))
-        .toList();
-
-    Map<String, String> tempDict = {};
-
-    // Loop through each JSON file
-    for (var file in jsonFiles) {
-      final rawData = await rootBundle.loadString(file);
-      List<dynamic> jsonData = json.decode(rawData);
-
-      // Add dictionary entries from the JSON file to the tempDict
-      for (var entry in jsonData) {
-        String englishWord = entry['English'].toLowerCase();
-        String pulaarWord = entry['Pulaar'].toLowerCase();
-        tempDict[englishWord] = pulaarWord;
-        tempDict[pulaarWord] = englishWord;
-      }
-    }
-
+    final rawData = await rootBundle.loadString('assets/merged_dictionary_EN-FR-FDJ-FT.json');
     setState(() {
-      dictionary = tempDict;
+      dictionary = List<Map<String, dynamic>>.from(json.decode(rawData));
     });
   }
 
   void translate() {
     String input = _controller.text.toLowerCase().trim();
+    for (var entry in dictionary) {
+      if (entry[fromLang]?.toLowerCase() == input && entry[toLang]?.isNotEmpty == true) {
+        setState(() {
+          translation = 'Translation: \n"${entry[toLang]}"';
+        });
+        return;
+      }
+    }
     setState(() {
-      translation = dictionary.containsKey(input)
-          ? 'Translation: \n"${dictionary[input]}"'
-          : "Not found";
+      translation = "Not found";
     });
+  }
+
+  Future<void> speak() async {
+    if (translation.isNotEmpty && translation != "Not found") {
+      await flutterTts.speak(translation.replaceFirst("Translation: \n", ""));
+    }
+  }
+
+  Future<void> listen() async {
+    bool available = await speech.initialize();
+    if (available) {
+      speech.listen(
+        onResult: (result) {
+          _controller.text = result.recognizedWords;
+          translate();
+        },
+      );
+    }
   }
 
   @override
@@ -83,7 +95,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBar(title: Text('English - Fula Translator')),
+        appBar: AppBar(title: Text('Multi-Language Translator')),
         body: Column(
           children: [
             Expanded(
@@ -91,12 +103,43 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: fromLang,
+                            items: languages.map((lang) => DropdownMenuItem(value: lang, child: Text(lang))).toList(),
+                            onChanged: (val) => setState(() => fromLang = val!),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.swap_horiz),
+                          onPressed: () => setState(() {
+                            final temp = fromLang;
+                            fromLang = toLang;
+                            toLang = temp;
+                          }),
+                        ),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: toLang,
+                            items: languages.map((lang) => DropdownMenuItem(value: lang, child: Text(lang))).toList(),
+                            onChanged: (val) => setState(() => toLang = val!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
                     TextField(
                       controller: _controller,
                       decoration: InputDecoration(
                         labelText: "Enter a word",
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.mic),
+                          onPressed: listen,
                         ),
                       ),
                       onSubmitted: (_) => translate(),
@@ -114,6 +157,12 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                         textAlign: TextAlign.center,
                       ),
                     ),
+                    if (translation.isNotEmpty && translation != "Not found")
+                      IconButton(
+                        icon: Icon(Icons.volume_up),
+                        onPressed: speak,
+                        tooltip: 'Speak Translation',
+                      ),
                     SizedBox(height: 20),
                     Builder(
                       builder: (context) {

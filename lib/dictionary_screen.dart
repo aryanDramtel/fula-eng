@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DictionaryScreen extends StatefulWidget {
-  final Map<String, String> dictionary;
+  final List<Map<String, dynamic>> dictionary;
 
   DictionaryScreen({required this.dictionary});
 
@@ -11,22 +11,26 @@ class DictionaryScreen extends StatefulWidget {
 
 class _DictionaryScreenState extends State<DictionaryScreen> {
   TextEditingController _searchController = TextEditingController();
-  List<MapEntry<String, String>> _filteredWords = [];
+  List<Map<String, dynamic>> _filteredWords = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredWords = widget.dictionary.entries.toList();
+    _filteredWords = List.from(widget.dictionary);
   }
 
   void _filterWords(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredWords = widget.dictionary.entries.toList();
+        _filteredWords = List.from(widget.dictionary);
       } else {
-        _filteredWords = widget.dictionary.entries
-            .where((entry) => entry.key.contains(query.toLowerCase()) || entry.value.contains(query.toLowerCase()))
-            .toList();
+        final lowerQuery = query.toLowerCase();
+        _filteredWords = widget.dictionary.where((entry) {
+          return (entry['English']?.toLowerCase().contains(lowerQuery) ?? false) ||
+                 (entry['French']?.toLowerCase().contains(lowerQuery) ?? false) ||
+                 (entry['Fula_FoutaDjallon']?.toLowerCase().contains(lowerQuery) ?? false) ||
+                 (entry['Fula_FoutaToro']?.toLowerCase().contains(lowerQuery) ?? false);
+        }).toList();
       }
     });
   }
@@ -42,7 +46,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: "Search",
+                labelText: "Search any language",
                 border: OutlineInputBorder(),
               ),
               onChanged: _filterWords,
@@ -52,13 +56,20 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
+                columnSpacing: 16,
                 columns: [
                   DataColumn(label: Text('English', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Pulaar', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('French', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Fouta Djallon', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Fouta Toro', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Source', style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 rows: _filteredWords.map((entry) => DataRow(cells: [
-                  DataCell(Text(entry.key)),
-                  DataCell(Text(entry.value)),
+                  DataCell(Text(entry['English'] ?? '')),
+                  DataCell(Text(entry['French'] ?? '')),
+                  DataCell(Text(entry['Fula_FoutaDjallon'] ?? '')),
+                  DataCell(Text(entry['Fula_FoutaToro'] ?? '')),
+                  DataCell(Text(entry['source'] ?? '')),
                 ])).toList(),
               ),
             ),
