@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'l10n/app_localizations.dart'; // ✅ Corrected import
 
 class SettingsScreen extends StatefulWidget {
   final ThemeMode currentTheme;
@@ -69,31 +70,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.titleMedium;
+    final local = AppLocalizations.of(context)!;
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(local.settings)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            Text('Theme', style: textStyle?.copyWith(fontWeight: FontWeight.bold)),
+            Text(local.theme, style: textStyle),
             Column(
               children: [
                 RadioListTile<ThemeMode>(
-                  title: const Text('System Default'),
+                  title: Text(local.systemDefault),
                   value: ThemeMode.system,
                   groupValue: _themeMode,
                   onChanged: _updateTheme,
                 ),
                 RadioListTile<ThemeMode>(
-                  title: const Text('Light'),
+                  title: Text(local.light),
                   value: ThemeMode.light,
                   groupValue: _themeMode,
                   onChanged: _updateTheme,
                 ),
                 RadioListTile<ThemeMode>(
-                  title: const Text('Dark'),
+                  title: Text(local.dark),
                   value: ThemeMode.dark,
                   groupValue: _themeMode,
                   onChanged: _updateTheme,
@@ -101,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const Divider(),
-            Text('Font Size', style: textStyle?.copyWith(fontWeight: FontWeight.bold)),
+            Text(local.fontSize, style: textStyle),
             Slider(
               value: _fontSize,
               min: 12,
@@ -111,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: _updateFontSize,
             ),
             const Divider(),
-            Text('Language Preference', style: textStyle?.copyWith(fontWeight: FontWeight.bold)),
+            Text(local.languagePreference, style: textStyle),
             DropdownButton<String>(
               isExpanded: true,
               value: _language,

@@ -1,5 +1,5 @@
 name: fula_translator
-description: "A new Flutter project."
+description: A new Flutter project.
 
 publish_to: 'none'
 
@@ -15,6 +15,9 @@ dependencies:
   url_launcher: ^6.1.14
   csv: ^6.0.0
   shared_preferences: ^2.2.2
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
 dev_dependencies:
   flutter_test:
@@ -23,7 +26,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/
     - assets/merged_dictionary_EN-FR-FDJ-FT.json
+
+l10n:
+  arb-dir: lib/l10n
+  template-arb-file: app_en.arb
+  output-localization-file: app_localizations.dart

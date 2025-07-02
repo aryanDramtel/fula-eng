@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "appTitle": "Multi-Language Translator",
+  "menu": "Menu",
+  "dictionary": "Dictionary",
+  "settings": "Settings",
+  "about": "About",
+  "aboutText": "This translator was made with ❤️ by Aryan.",
+  "close": "Close",
+  "enterWord": "Enter a word",
+  "translate": "Translate",
+  "theme": "Theme",
+  "systemDefault": "System Default",
+  "light": "Light",
+  "dark": "Dark",
+  "fontSize": "Font Size",
+  "languagePreference": "Language Preference"
+}

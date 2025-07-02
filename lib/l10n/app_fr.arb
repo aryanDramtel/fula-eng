@@ -1,0 +1,18 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Traducteur Multilingue",
+  "menu": "Menu",
+  "dictionary": "Dictionnaire",
+  "settings": "Paramètres",
+  "about": "À propos",
+  "aboutText": "Ce traducteur a été créé avec ❤️ par Aryan.",
+  "close": "Fermer",
+  "enterWord": "Entrez un mot",
+  "translate": "Traduire",
+  "theme": "Thème",
+  "systemDefault": "Système",
+  "light": "Clair",
+  "dark": "Sombre",
+  "fontSize": "Taille de police",
+  "languagePreference": "Langue préférée"
+}

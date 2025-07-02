@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'l10n/app_localizations.dart';
 import 'dictionary_screen.dart';
 import 'settings_screen.dart';
 
@@ -18,7 +20,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
   double _fontSize = 16;
-  String _language = 'English';
+  String _languageCode = 'en';
   bool _isLoading = true;
 
   @override
@@ -32,14 +34,28 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _themeMode = ThemeMode.values[prefs.getInt('themeMode') ?? 0];
       _fontSize = prefs.getDouble('fontSize') ?? 16;
-      _language = prefs.getString('language') ?? 'English';
+      _languageCode = prefs.getString('language') == 'French' ? 'fr' : 'en';
       _isLoading = false;
     });
   }
 
-  void _updateTheme(ThemeMode mode) => setState(() => _themeMode = mode);
-  void _updateFontSize(double size) => setState(() => _fontSize = size);
-  void _updateLanguage(String lang) => setState(() => _language = lang);
+  void _updateTheme(ThemeMode mode) async {
+    setState(() => _themeMode = mode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', mode.index);
+  }
+
+  void _updateFontSize(double size) async {
+    setState(() => _fontSize = size);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('fontSize', size);
+  }
+
+  void _updateLanguage(String language) async {
+    setState(() => _languageCode = (language == 'French') ? 'fr' : 'en');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', language);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,22 +74,27 @@ class _MyAppState extends State<MyApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      locale: Locale(_languageCode),
+      supportedLocales: const [
+        Locale('en'),
+        Locale('fr'),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       themeMode: _themeMode,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        textTheme: textTheme,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        textTheme: textTheme,
-      ),
+      theme: ThemeData(brightness: Brightness.light, textTheme: textTheme),
+      darkTheme: ThemeData(brightness: Brightness.dark, textTheme: textTheme),
       home: TranslatorApp(
+        themeMode: _themeMode,
+        fontSize: _fontSize,
+        languageCode: _languageCode,
         onThemeChanged: _updateTheme,
         onFontSizeChanged: _updateFontSize,
         onLanguageChanged: _updateLanguage,
-        themeMode: _themeMode,
-        fontSize: _fontSize,
-        language: _language,
       ),
     );
   }
@@ -85,19 +106,19 @@ class TranslatorApp extends StatefulWidget {
   final void Function(String) onLanguageChanged;
   final ThemeMode themeMode;
   final double fontSize;
-  final String language;
+  final String languageCode;
 
-  TranslatorApp({
+  const TranslatorApp({
     required this.onThemeChanged,
     required this.onFontSizeChanged,
     required this.onLanguageChanged,
     required this.themeMode,
     required this.fontSize,
-    required this.language,
+    required this.languageCode,
   });
 
   @override
-  _TranslatorAppState createState() => _TranslatorAppState();
+  State<TranslatorApp> createState() => _TranslatorAppState();
 }
 
 class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserver {
@@ -155,11 +176,12 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Multi-Language Translator', style: textTheme.titleLarge),
+        title: Text(local.appTitle, style: textTheme.titleLarge),
         actions: [
           Builder(
             builder: (context) => IconButton(
@@ -175,11 +197,11 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
-              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: widget.fontSize + 4)),
+              child: Text(local.menu, style: TextStyle(color: Colors.white, fontSize: widget.fontSize + 4)),
             ),
             ListTile(
               leading: Icon(Icons.book),
-              title: Text('Dictionary', style: textTheme.titleMedium),
+              title: Text(local.dictionary, style: textTheme.titleMedium),
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
@@ -191,7 +213,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
             ),
             ListTile(
               leading: Icon(Icons.settings),
-              title: Text('Settings', style: textTheme.titleMedium),
+              title: Text(local.settings, style: textTheme.titleMedium),
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
@@ -199,7 +221,7 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                     builder: (_) => SettingsScreen(
                       currentTheme: widget.themeMode,
                       currentFontSize: widget.fontSize,
-                      currentLanguage: widget.language,
+                      currentLanguage: widget.languageCode == 'fr' ? 'French' : 'English',
                       onThemeChanged: widget.onThemeChanged,
                       onFontSizeChanged: widget.onFontSizeChanged,
                       onLanguageChanged: widget.onLanguageChanged,
@@ -210,16 +232,16 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
             ),
             ListTile(
               leading: Icon(Icons.info),
-              title: Text('About', style: textTheme.titleMedium),
+              title: Text(local.about, style: textTheme.titleMedium),
               onTap: () {
                 Navigator.of(context).pop();
                 showDialog(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: Text("About"),
-                    content: Text("This translator was made with ❤️ by Aryan."),
+                    title: Text(local.about),
+                    content: Text(local.aboutText),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: Text("Close"))
+                      TextButton(onPressed: () => Navigator.pop(context), child: Text(local.close))
                     ],
                   ),
                 );
@@ -266,17 +288,15 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
                     controller: _controller,
                     style: textTheme.bodyLarge,
                     decoration: InputDecoration(
-                      labelText: "Enter a word",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                      labelText: local.enterWord,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
                     ),
                     onSubmitted: (_) => translate(),
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: translate,
-                    child: Text("Translate", style: textTheme.bodyMedium),
+                    child: Text(local.translate, style: textTheme.bodyMedium),
                   ),
                   SizedBox(height: 20),
                   Center(
@@ -304,21 +324,16 @@ class _TranslatorAppState extends State<TranslatorApp> with WidgetsBindingObserv
       child: SafeArea(
         child: Center(
           child: GestureDetector(
-            onTap: () => launchUrl(Uri.parse("#")),
+            onTap: () => launchUrl(Uri.parse("https://instagram.com/saiyaman_x")),
             child: Text.rich(
               TextSpan(
                 text: "Made with ",
                 style: TextStyle(color: Colors.white, fontSize: widget.fontSize),
                 children: [
-                  WidgetSpan(
-                    child: Icon(Icons.favorite, color: Colors.red, size: widget.fontSize),
-                  ),
+                  WidgetSpan(child: Icon(Icons.favorite, color: Colors.red, size: widget.fontSize)),
                   TextSpan(
                     text: " by Aryan",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
+                    style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                   ),
                 ],
               ),
