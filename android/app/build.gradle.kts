@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fula_translator"
+    namespace = "com.nayra.fbb.lingufula"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973" // ✅ override here
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.fula_translator"
+        applicationId = "com.nayra.fbb.lingufula"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

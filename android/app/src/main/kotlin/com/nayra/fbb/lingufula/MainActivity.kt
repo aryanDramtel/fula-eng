@@ -1,4 +1,4 @@
-package com.example.fula_translator
+package com.nayra.fbb.lingufula
 
 import io.flutter.embedding.android.FlutterActivity
 
